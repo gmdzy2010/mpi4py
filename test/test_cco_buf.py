@@ -355,6 +355,7 @@ class BaseTestCCOBufInplace(object):
                     for value in buf.flat:
                         self.assertEqual(value, root)
 
+    @unittest.skipMPI('msmpi(==10.0.0)')
     def testScatter(self):
         size = self.COMM.Get_size()
         rank = self.COMM.Get_rank()
@@ -601,6 +602,16 @@ class TestReduceLocal(unittest.TestCase):
                             self.assertEqual(value, i+1)
                         elif op == MPI.MIN:
                             self.assertEqual(value, i)
+        for array in arrayimpl.ArrayTypes:
+            for op in (MPI.SUM, MPI.PROD, MPI.MAX, MPI.MIN):
+                sbuf = array(range(3), "i")
+                rbuf = array(range(3), "i")
+                def f(): op.Reduce_local(sbuf.as_mpi_c(2),
+                                         rbuf.as_mpi_c(3))
+                self.assertRaises(ValueError, f)
+                def f(): op.Reduce_local([sbuf.as_raw(), 1, MPI.INT],
+                                         [rbuf.as_raw(), 1, MPI.SHORT])
+                self.assertRaises(ValueError, f)
 
 
 class TestCCOBufSelf(BaseTestCCOBuf, unittest.TestCase):

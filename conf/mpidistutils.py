@@ -149,12 +149,21 @@ def customize_compiler(compiler, lang=None,
         if not compiler.initialized: compiler.initialize()
         compiler.ldflags_shared.append('/MANIFEST')
         compiler.ldflags_shared_debug.append('/MANIFEST')
+        compile_options = (compiler.compile_options,
+                           compiler.compile_options_debug)
         from distutils.msvc9compiler import VERSION
         if VERSION < 10.0:
-            for options in (compiler.compile_options,
-                            compiler.compile_options_debug):
+            for options in compile_options:
                 options.append('/D_USE_DECLSPECS_FOR_SAL=0')
                 options.append('/D_USE_ATTRIBUTES_FOR_SAL=0')
+                options.append('/DMSMPI_NO_SAL')
+        if VERSION <= 10.0:
+            topdir = os.path.dirname(os.path.dirname(__file__))
+            srcdir = os.path.abspath(os.path.join(topdir, 'src'))
+            header = os.path.join(srcdir, 'msvcfix.h')
+            if os.path.exists(header):
+                for options in compile_options:
+                    options.append('/FI%s' % header)
 
 # -----------------------------------------------------------------------------
 
@@ -903,6 +912,8 @@ class build_clib(cmd_build_clib.build_clib):
                     self.compiler.linker_so[pos] = '-shared'
                 install_name = os.path.basename(lib_fullpath)
                 extra_preargs = ['-install_name', install_name]
+            if sys.platform.startswith('linux'):
+                extra_preargs = ['-Wl,--no-as-needed']
             self.compiler.link(
                 self.compiler.SHARED_LIBRARY,
                 objects, lib_fullpath,
@@ -1454,6 +1465,9 @@ if setuptools:
 
 try:
     import msilib
+    if not hasattr(msilib, 'Win64'):
+        if hasattr(msilib, 'AMD64'):
+            msilib.Win64 = msilib.AMD64
     Directory_make_short = msilib.Directory.make_short
     def make_short(self, file):
         parts = file.split('.')

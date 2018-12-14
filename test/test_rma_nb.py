@@ -3,10 +3,12 @@ import mpiunittest as unittest
 import arrayimpl
 import sys
 
+pypy_lt_53 = (hasattr(sys, 'pypy_version_info') and
+              sys.pypy_version_info < (5, 3))
+
 def mkzeros(n):
-    if hasattr(sys, 'pypy_version_info'):
-        if sys.pypy_version_info < (5, 3):
-            return b'\0' * n
+    if pypy_lt_53:
+        return b'\0' * n
     return bytearray(n)
 
 def memzero(m):
@@ -180,7 +182,7 @@ SpectrumMPI = MPI.get_vendor()[0] == 'Spectrum MPI'
 try:
     if SpectrumMPI: raise NotImplementedError
     MPI.Win.Create(None, 1, MPI.INFO_NULL, MPI.COMM_SELF).Free()
-except NotImplementedError:
+except (NotImplementedError, MPI.Exception):
     unittest.disable(BaseTestRMA, 'mpi-rma-nb')
 
 

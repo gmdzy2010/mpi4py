@@ -146,9 +146,8 @@ def _manager_thread(pool, **options):
     size = options.pop('max_workers', 1)
     queue = setup_pool(pool, size)
 
-    backoff = Backoff(options.get('backoff', BACKOFF))
-
     def worker():
+        backoff = Backoff(options.get('backoff', BACKOFF))
         while True:
             try:
                 item = queue.pop()
@@ -458,12 +457,12 @@ def client(comm, tag, worker_pool, task_queue, **options):
             pid = worker_pool.pop()
         except LookupError:  # pragma: no cover
             task_queue.add(item)
-            return
+            return False
 
         future, task = item
         if not future.set_running_or_notify_cancel():
             worker_pool.put(pid)
-            return
+            return False
 
         try:
             request = comm_isend(task, pid, tag)
@@ -471,6 +470,7 @@ def client(comm, tag, worker_pool, task_queue, **options):
         except BaseException:
             worker_pool.put(pid)
             future.set_exception(sys_exception())
+        return None
 
     while True:
         if task_queue and worker_pool:
@@ -886,7 +886,7 @@ def server_main_accept():
     from getopt import getopt
     longopts = ['bind=', 'port=', 'service=', 'info=']
     optlist, _ = getopt(sys.argv[1:], '', longopts)
-    options = {opt[2:] : val for opt, val in optlist}
+    options = {opt[2:]: val for opt, val in optlist}
 
     if 'bind' in options or 'port' in options:
         bind = options.get('bind') or get_server_bind()

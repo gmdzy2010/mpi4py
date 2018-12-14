@@ -23,41 +23,37 @@ env:
 matrix:
   include:
     - os: osx
-      osx_image: xcode8
       env: MPI=mpich PY=2
       language: generic
       python: 2
     - os: osx
-      osx_image: xcode8
       env: MPI=openmpi PY=2
       language: generic
       python: 2
     - os: osx
-      osx_image: xcode8
       env: MPI=mpich PY=3
       language: generic
       python: 3
     - os: osx
-      osx_image: xcode8
       env: MPI=openmpi PY=3
       language: generic
       python: 3
-    - python: pypy2.7-5.8.0
+    - python: pypy2.7-5.10.0
       env: MPI=mpich
-    - python: pypy2.7-5.8.0
+    - python: pypy2.7-5.10.0
       env: MPI=openmpi
-    - python: pypy3.5-5.8.0
+    - python: pypy3.5-5.10.0
       env: MPI=mpich
-    - python: pypy3.5-5.8.0
+    - python: pypy3.5-5.10.0
       env: MPI=openmpi
   allow_failures:
-    - python: pypy2.7-5.8.0
+    - python: pypy2.7-5.10.0
       env: MPI=mpich
-    - python: pypy2.7-5.8.0
+    - python: pypy2.7-5.10.0
       env: MPI=openmpi
-    - python: pypy3.5-5.8.0
+    - python: pypy3.5-5.10.0
       env: MPI=mpich
-    - python: pypy3.5-5.8.0
+    - python: pypy3.5-5.10.0
       env: MPI=openmpi
 
 branches:
@@ -73,10 +69,15 @@ cache:
 
 before_install:
   - |
-    if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then  # Install Python
+    if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+        sudo apt-get update -q
+    fi
+  - |
+    if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
         brew update
-        if [[ "$PY" == "3" ]]; then
-            brew install python3
+        brew cask uninstall oclint
+        if [[ "$PY" == "3" ]]; then  # Install Python 3
+            brew upgrade python
         fi
     fi
   - python$PY -m pip install Cython
